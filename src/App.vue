@@ -1,0 +1,36 @@
+<template>
+  <div class="app">
+    <div class="mapContainer">
+      <Map />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Map from "./map.vue";
+</script>
+
+<style scoped>
+.btnGroup {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 50px;
+  display: flex;
+  height: 30px;
+  background-color: #fff;
+  border: 1px solid #b3b3b3;
+  border-radius: 5px;
+  overflow: hidden;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.btn {
+  padding: 0 16px;
+}
+
+.btn.active {
+  background-color: #e0e0e0;
+}
+</style>
