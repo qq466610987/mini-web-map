@@ -1,7 +1,7 @@
 import Observable from "./observable";
 
 class Img extends Observable {
-  private timer: number | null = null
+  private timer: number | undefined
   private url: string
   private onload: Function
   private called: boolean = false
@@ -9,7 +9,6 @@ class Img extends Observable {
 
   constructor(url: string, onload: Function) {
     super()
-    this.timer = null;
     this.url = url;
     this.onload = onload;
     this.called = false
