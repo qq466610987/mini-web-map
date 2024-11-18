@@ -10,110 +10,123 @@ import {
   getRandomDomainIndex
 } from "./utils";
 import Tile from "./tile";
+import Layer from "./base-layer";
+
+interface MapOptions {
+  container: HTMLElement;
+  center: [number, number];
+  zoom: number;
+}
 
 class Map {
-  private _Layers: any;
-  private center: [number, number];
-  private state: any;
+  private ctx: CanvasRenderingContext2D;
+  private container: HTMLElement;
   private width: number;
   private height: number;
-  private TileCache: Record<string, Tile> = {};
-  private currentTileCache: Record<string, boolean> = {};
-  private selectMapData: any = {
-
-  };
   private zoom: number;
-  constructor() {
-
+  private center: [number, number];
+  private layers: Layer[] = [];
+  private _isMousedown: boolean = false;
+  constructor(options: MapOptions) {
+    Object.assign(this, options);
+    this.width = this.container.clientWidth;
+    this.height = this.container.clientHeight;
+    this.ctx = this.container.getContext("2d");
+    // 添加事件监听
+    this.container.addEventListener("mousemove", this.onMousemove);
+    window.addEventListener("mouseup", this.onMouseup);
+    window.addEventListener("wheel", this.onMousewheel);
   }
 
-  // 计算显示范围内的瓦片行列号
-  renderTiles(isFadeIn = false) {
-    let center = this.center
-    // 需要转换经纬度
-    if (this.selectMapData.transformLngLat) {
-      center = this.selectMapData.transformLngLat(...this.center)
+  getWidth(): number {
+    return this.width;
+  }
+  getHeight(): number {
+    return this.height;
+  }
+  getZoom(): number {
+    return this.zoom;
+  }
+  getCenter(): [number, number] {
+    return this.center;
+  }
+  getCanvas(): HTMLCanvasElement {
+    return this.container as HTMLCanvasElement;
+  }
+  render(): void {
+    // 清空画布
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.layers.forEach(layer => {
+      layer.render();
+    });
+  }
+  onMousemove(e: MouseEvent) {
+    if (!this._isMousedown) {
+      return;
     }
-    // 地图自定义数据
-    let plusOpt = {
-      origin: this.selectMapData.origin,
-      resolutions: this.selectMapData.resolutions,
-      lngLatToMercator: this.selectMapData.lngLatToMercator
+    // 计算本次拖动的距离对应的经纬度数据
+    let mx = e.movementX * resolutions[this.zoom];
+    let my = e.movementY * resolutions[this.zoom];
+    let [x, y] = lngLatToMercator(...this.center);
+    // 更新拖动后的中心点经纬度
+    this.center = mercatorToLngLat(x - mx, my + y);
+    // 重新渲染
+    this.render();
+  }
+  // 鼠标松开
+  onMouseup() {
+    this.isMousedown = false;
+  },
+
+  // 鼠标滚动
+  onMousewheel(e) {
+    if (e.deltaY > 0) {
+      // 层级变小
+      if (this.zoom > this.minZoom) this.zoom--;
+    } else {
+      // 层级变大
+      if (this.zoom < this.maxZoom) this.zoom++;
     }
-    // 中心点对应的瓦片
-    let centerTile = getTileRowAndCol(...center, this.zoom, plusOpt);
-    // 中心瓦片左上角对应的像素坐标
-    let centerTilePos = [
-      centerTile[0] * TILE_SIZE,
-      centerTile[1] * TILE_SIZE,
-    ];
-    // 中心点对应的像素坐标
-    let centerPos = getPxFromLngLat(...center, this.zoom, plusOpt);
-    // 中心像素坐标距中心瓦片左上/下角的差值
-    let offset = [
-      centerPos[0] - centerTilePos[0],
-      centerPos[1] - centerTilePos[1],
-    ];
-    // 计算瓦片数量
-    let rowMinNum = Math.ceil((this.width / 2 - offset[0]) / TILE_SIZE);
-    let colMinNum = Math.ceil((this.height / 2 - offset[1]) / TILE_SIZE);
-    let rowMaxNum = Math.ceil(
-      (this.width / 2 - (TILE_SIZE - offset[0])) / TILE_SIZE
-    );
-    let colMaxNum = Math.ceil(
-      (this.height / 2 - (TILE_SIZE - offset[1])) / TILE_SIZE
-    );
-    // y轴向上
-    let axisYIsTop = this.selectMapData.axis ? this.selectMapData.axis[1] === 'top' : false
-    this.currentTileCache = {}; // 清空缓存对象
-    // 渲染画布内所有瓦片
-    for (let i = -rowMinNum; i <= rowMaxNum; i++) {
-      for (let j = -colMinNum; j <= colMaxNum; j++) {
-        // 当前瓦片的行列号
-        let row = centerTile[0] + i;
-        let col = centerTile[1] + j;
-        // 当前瓦片的显示位置
-        let _j = j
-        // 百度地图，坐标系和画布坐标系y轴相反
-        if (axisYIsTop && j !== 0) {
-          _j = -j
-        }
-        let x = i * TILE_SIZE - offset[0];
-        // 百度地图的offset[1]是中心点距中心瓦片左下角的距离，需要换算成左上角的y值
-        let y = _j * TILE_SIZE - (axisYIsTop ? TILE_SIZE - offset[1] : offset[1]);
-        // 缓存key
-        let cacheKey = row + "_" + col + "_" + this.zoom;
-        // 记录当前需要的瓦片
-        this.currentTileCache[cacheKey] = true;
-        // 该瓦片已加载过
-        let layer = this.getCurrentMainLayer();
-        if (this.tileCache[cacheKey]) {
-          this.tileCache[cacheKey]
-            .updateLayer(layer)
-            .updatePos(x, y)
-            .render(isFadeIn);
-        } else {
-          // 未加载过
-          this.tileCache[cacheKey] = new Tile({
-            layer,
-            row,
-            col,
-            zoom: this.zoom,
-            x,
-            y,
-            // 判断瓦片是否在当前画布缓存对象上，是的话则代表需要渲染
-            shouldRender: (key) => {
-              return this.currentTileCache[key];
-            },
-            // 获取当前地图类型
-            getMapTypeData: () => {
-              return this.selectMapData
-            }
-          });
-        }
-      }
+    // 层级未发生改变
+    if (this.lastZoom === this.zoom) {
+      return;
     }
-    // 渲染叠加物
-    this.renderOverlay();
+    this.lastZoom = this.zoom;
+    // 更新缩放比例，也就是目标缩放值
+    this.scale *= e.deltaY > 0 ? 0.5 : 2;
+    // 停止上一次动画
+    if (this.playback) {
+      this.playback.stop();
+    }
+    // 开启动画
+    this.playback = animate({
+      from: this.scaleTmp, // 当前缩放值
+      to: this.scale, // 目标缩放值
+      onUpdate: (latest) => {
+        // 实时更新当前缩放值
+        this.scaleTmp = latest;
+        // 保存画布之前状态，原因有二：
+        // 1.scale方法是会在之前的状态上叠加的，比如初始是1，第一次执行scale(2,2)，第二次执行scale(3,3)，最终缩放值不是3，而是6，所以每次缩放完就恢复状态，那么就相当于每次都是从初始值1开始缩放，效果就对了
+        // 2.保证缩放效果只对重新渲染已有瓦片生效，不会对最后的renderTiles()造成影响
+        this.ctx.save();
+        this.clear();
+        this.ctx.scale(latest, latest);
+        // 刷新当前画布上的瓦片
+        Object.keys(this.currentTileCache).forEach((tile) => {
+          this.tileCache[tile].render();
+        });
+        // 恢复到画布之前状态
+        this.ctx.restore();
+      },
+      onComplete: () => {
+        // 动画完成后将缩放值重置为1
+        this.scale = 1;
+        this.scaleTmp = 1;
+        // 根据最终缩放值重新计算需要的瓦片并渲染
+        this.renderTiles();
+      },
+    });
   },
 }
+
+export default Map;
