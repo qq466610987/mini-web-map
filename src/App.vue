@@ -1,16 +1,17 @@
 <template>
   <div class="app">
-    <div class="mapContainer">
       <Map />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Map from "./map.vue";
+import Map from "./map2.vue";
 </script>
 
 <style scoped>
+.app {
+  height: 100%;
+}
 .btnGroup {
   position: fixed;
   left: 50%;

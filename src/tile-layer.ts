@@ -29,14 +29,13 @@ class TileLayer extends BaseLayer {
     super()
     this.map = options.map;
     this.url = options.url;
-    this.width = this.map.getWidth();
-    this.height = this.map.getHeight();
-    this.ctx = this.map.getCanvas().getContext("2d");
+  }
+  getCtx() {
+    return this.map.getCtx();
   }
   render(): void {
-    const zoom = this.map.getZoom();
+    const zoom = this.zoom = this.map.getZoom();
     const center = this.map.getCenter();
-
     // 中心点对应的瓦片
     let centerTile = getTileRowAndCol(
       ...lngLatToMercator(...center),
@@ -55,6 +54,8 @@ class TileLayer extends BaseLayer {
       centerPos[1] - centerTilePos[1],
     ];
     // 计算瓦片数量
+    this.width = this.map!.getWidth();
+    this.height = this.map!.getHeight();
     let rowMinNum = Math.ceil((this.width / 2 - offset[0]) / TILE_SIZE);
     let colMinNum = Math.ceil((this.height / 2 - offset[1]) / TILE_SIZE);
     let rowMaxNum = Math.ceil(
@@ -73,6 +74,10 @@ class TileLayer extends BaseLayer {
         // 当前瓦片的显示位置
         let x = i * TILE_SIZE - offset[0];
         let y = j * TILE_SIZE - offset[1];
+        console.log(zoom);
+        if (zoom === undefined || zoom === null) {
+          continue
+        }
         // 缓存key
         let cacheKey = row + "_" + col + "_" + zoom;
         // 记录当前需要的瓦片
@@ -83,10 +88,10 @@ class TileLayer extends BaseLayer {
         } else {
           // 未加载过
           this.tileCache[cacheKey] = new Tile({
-            ctx: this.ctx,
+            ctx: this.getCtx(),
             row,
             col,
-            zoom: this.zoom,
+            zoom: zoom,
             x,
             y,
             // 判断瓦片是否在当前画布缓存对象上，是的话则代表需要渲染
@@ -97,7 +102,6 @@ class TileLayer extends BaseLayer {
         }
       }
     }
-
   }
 }
 
@@ -122,7 +126,7 @@ class Tile {
   private cacheKey: string;
   private img: HTMLImageElement | null = null;
   private loaded: boolean = false;
-  private timer: NodeJS.Timeout | null = null;
+  private timer: number | null = null;
   private row: number;
   private col: number;
   private zoom: number;
@@ -150,6 +154,7 @@ class Tile {
 
   // 生成url
   createUrl() {
+    // console.log(this.row, this.col, this.zoom);
     this.url = getTileUrl(this.row, this.col, this.zoom);
   }
 
@@ -163,7 +168,7 @@ class Tile {
       this.load();
     }, 1000);
     this.img.onload = () => {
-      clearTimeout(this.timer);
+      clearTimeout(this.timer!);
       this.loaded = true;
       this.render();
     };
@@ -178,7 +183,7 @@ class Tile {
   }
 
   // 更新位置
-  updatePos(x, y) {
+  updatePos(x: number, y: number) {
     this.x = x;
     this.y = y;
     return this;

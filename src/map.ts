@@ -1,21 +1,17 @@
 import {
-  getTileUrlPro,
-  TILE_SIZE,
-  getTileRowAndCol,
   lngLatToMercator,
-  getPxFromLngLat,
   resolutions,
-  mercatorToLngLat,
-  KEY,
-  getRandomDomainIndex
+  mercatorToLngLat
 } from "./utils";
-import Tile from "./tile";
 import Layer from "./base-layer";
+import { animate } from "popmotion";
+import { omit } from "lodash-es";
 
 interface MapOptions {
   container: HTMLElement;
   center: [number, number];
   zoom: number;
+  layers: Layer[];
 }
 
 class Map {
@@ -23,19 +19,40 @@ class Map {
   private container: HTMLElement;
   private width: number;
   private height: number;
-  private zoom: number;
-  private center: [number, number];
+  private zoom: number = 15;
+  private minZoom: number = 1;
+  private maxZoom: number = 18;
+  protected _lastZoom: number = 0;
+  private center: [number, number] = [120.19, 30.26];
   private layers: Layer[] = [];
   private _isMousedown: boolean = false;
+  private scale: number = 1; // 当前缩放值
+  private scaleTmp: number = 1; // 目标缩放值
+  private playback: any; // 动画
   constructor(options: MapOptions) {
-    Object.assign(this, options);
+    Object.assign(this, omit(options, "layers"));
+    // 用addLayer方法添加图层，这样图层就可以访问到地图对象
+    options.layers.forEach(layer => {
+      this.addLayer(layer);
+    });
+    // 初始化dom
     this.width = this.container.clientWidth;
     this.height = this.container.clientHeight;
-    this.ctx = this.container.getContext("2d");
+    // 创建画布
+    let canvas = document.createElement("canvas");
+    canvas.width = this.width;
+    canvas.height = this.height;
+    canvas.addEventListener('mousedown', this.onMousedown.bind(this));
+    this.ctx = canvas.getContext("2d")!;
+    // 移动画布原点
+    this.ctx.translate(this.width / 2, this.height / 2);
+    this.container.appendChild(canvas);
     // 添加事件监听
-    this.container.addEventListener("mousemove", this.onMousemove);
-    window.addEventListener("mouseup", this.onMouseup);
-    window.addEventListener("wheel", this.onMousewheel);
+    window.addEventListener("mousemove", this.onMousemove.bind(this));
+    window.addEventListener("mouseup", this.onMouseup.bind(this));
+    window.addEventListener("wheel", this.onMousewheel.bind(this));
+    // 初始渲染
+    this.render();
   }
 
   getWidth(): number {
@@ -50,8 +67,8 @@ class Map {
   getCenter(): [number, number] {
     return this.center;
   }
-  getCanvas(): HTMLCanvasElement {
-    return this.container as HTMLCanvasElement;
+  getCtx(): CanvasRenderingContext2D {
+    return this.ctx;
   }
   render(): void {
     // 清空画布
@@ -60,7 +77,7 @@ class Map {
       layer.render();
     });
   }
-  onMousemove(e: MouseEvent) {
+  private onMousemove(e: MouseEvent) {
     if (!this._isMousedown) {
       return;
     }
@@ -74,12 +91,17 @@ class Map {
     this.render();
   }
   // 鼠标松开
-  onMouseup() {
-    this.isMousedown = false;
-  },
-
+  private onMouseup() {
+    this._isMousedown = false;
+  }
+  // 鼠标按下
+  onMousedown(e: MouseEvent) {
+    if (e.which === 1) {
+      this._isMousedown = true;
+    }
+  }
   // 鼠标滚动
-  onMousewheel(e) {
+  private onMousewheel(e: WheelEvent) {
     if (e.deltaY > 0) {
       // 层级变小
       if (this.zoom > this.minZoom) this.zoom--;
@@ -88,10 +110,10 @@ class Map {
       if (this.zoom < this.maxZoom) this.zoom++;
     }
     // 层级未发生改变
-    if (this.lastZoom === this.zoom) {
+    if (this._lastZoom === this.zoom) {
       return;
     }
-    this.lastZoom = this.zoom;
+    this._lastZoom = this.zoom;
     // 更新缩放比例，也就是目标缩放值
     this.scale *= e.deltaY > 0 ? 0.5 : 2;
     // 停止上一次动画
@@ -112,9 +134,10 @@ class Map {
         this.clear();
         this.ctx.scale(latest, latest);
         // 刷新当前画布上的瓦片
-        Object.keys(this.currentTileCache).forEach((tile) => {
-          this.tileCache[tile].render();
-        });
+        this.render();
+        // Object.keys(this.currentTileCache).forEach((tile) => {
+        //   this.tileCache[tile].render();
+        // });
         // 恢复到画布之前状态
         this.ctx.restore();
       },
@@ -123,10 +146,19 @@ class Map {
         this.scale = 1;
         this.scaleTmp = 1;
         // 根据最终缩放值重新计算需要的瓦片并渲染
-        this.renderTiles();
+        this.render();
       },
     });
-  },
+  }
+
+  public addLayer(layer: Layer) {
+    layer.setMap(this);
+    this.layers.push(layer);
+  }
+
+  clear() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+  }
 }
 
 export default Map;

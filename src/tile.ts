@@ -1,6 +1,6 @@
 import Konva from "konva";
-import Img from "./img";
-import { getTileUrlPro } from "./utils";
+import Img from "./image";
+import { getTileUrlPro, TILE_SIZE } from "./utils";
 
 // 瓦片类
 type TileConstructorParams = {
@@ -85,7 +85,7 @@ class Tile {
               opacity: this.opacity,
             })
           }
-          resolve()
+          resolve(void 0)
         })
       })
     })
