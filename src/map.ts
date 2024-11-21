@@ -26,8 +26,8 @@ class Map {
   private scale: number = 1; // 当前缩放值
   private scaleTmp: number = 1; // 目标缩放值
   private playback: any; // 动画
-  // 平移矩阵
-  private translateMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  // 平移
+  private translateMatrix = [0, 0]
 
   constructor(options: MapOptions) {
     Object.assign(this, omit(options, "layers"));
@@ -83,10 +83,10 @@ class Map {
       return;
     }
     // 设置平移矩阵
-    const o = new Float32Array([1, 0, 0, 0, 1, 0, e.movementX, e.movementY, 1]);
-    const out = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    const calc = glMatrix.mat3.multiply(out, o, this.translateMatrix);
-    this.setTranslateMatrix(calc)
+    // const o = new Float32Array([1, 0, 0, 0, 1, 0, e.movementX, e.movementY, 1]);
+    // const out = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    // const calc = glMatrix.mat3.multiply(out, o, this.translateMatrix);
+    this.setTranslateMatrix([-e.movementX, -e.movementY])
 
     // 计算本次拖动的距离对应的经纬度数据
     let mx = e.movementX * resolutions[this.zoom];
@@ -163,7 +163,7 @@ class Map {
     return this.translateMatrix;
   }
 
-  private setTranslateMatrix(matrix: number[][]) {
+  private setTranslateMatrix(matrix: number[]) {
     this.translateMatrix = matrix;
   }
   public addLayer(layer: Layer) {
@@ -173,6 +173,9 @@ class Map {
 
   clear() {
     this.ctx.clearRect(0, 0, this.width, this.height);
+  }
+  public getContainer(): HTMLElement {
+    return this.container;
   }
 }
 
