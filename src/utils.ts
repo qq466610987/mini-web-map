@@ -65,7 +65,7 @@ export interface TileOptions {
 }
 
 export const getTileRowAndCol = (lng: number, lat: number, z: number, opt: TileOptions = {}): [number, number] => {
-  let [x, y] = transformXY(...(opt.lngLatToMercator || lngLatToMercator)(lng, lat), opt.origin)
+  let [x, y] = transformXY(...[lng, lat], opt.origin)
   let resolution = (opt.resolutions || resolutions)[z]
   let row = Math.floor(x / resolution / TILE_SIZE)
   let col = Math.floor(y / resolution / TILE_SIZE)

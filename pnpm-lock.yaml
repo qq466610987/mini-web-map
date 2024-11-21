@@ -14,6 +14,9 @@ importers:
       gcoord:
         specifier: ^1.0.6
         version: 1.0.6
+      gl-matrix:
+        specifier: ^3.4.3
+        version: 3.4.3
       konva:
         specifier: ^9.3.16
         version: 9.3.16
@@ -30,6 +33,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^5.1.4
         version: 5.2.0(vite@5.4.11)(vue@3.5.13(typescript@5.6.3))
+      prettier:
+        specifier: 3.3.3
+        version: 3.3.3
       typescript:
         specifier: ~5.6.2
         version: 5.6.3
@@ -403,6 +409,9 @@ packages:
     resolution: {integrity: sha512-Z+uyWrD2BTWmJOUvAdEAZQdQIVA5MFwUu7P5BfBdQEpLiVAsNw9mZF3/QbDJ4ZbfcJEnFKgHXOgUFXo5r/aVPg==}
     engines: {node: '>=16.11.0'}
 
+  gl-matrix@3.4.3:
+    resolution: {integrity: sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==}
+
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
@@ -443,6 +452,11 @@ packages:
   postcss@8.4.49:
     resolution: {integrity: sha512-OCVPnIObs4N29kxTjzLfUryOkvZEq+pf8jTF0lg8E7uETuWHA+v7j3c/xJmiqpX450191LlmZfUKkXxkTry7nA==}
     engines: {node: ^10 || ^12 || >=14}
+
+  prettier@3.3.3:
+    resolution: {integrity: sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   rollup@4.27.2:
     resolution: {integrity: sha512-KreA+PzWmk2yaFmZVwe6GB2uBD86nXl86OsDkt1bJS9p3vqWuEQ6HnJJ+j/mZi/q0920P99/MVRlB4L3crpF5w==}
@@ -805,6 +819,8 @@ snapshots:
 
   gcoord@1.0.6: {}
 
+  gl-matrix@3.4.3: {}
+
   he@1.2.0: {}
 
   hey-listen@1.0.8: {}
@@ -841,6 +857,8 @@ snapshots:
       nanoid: 3.3.7
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  prettier@3.3.3: {}
 
   rollup@4.27.2:
     dependencies:

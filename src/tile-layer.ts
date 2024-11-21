@@ -74,7 +74,6 @@ class TileLayer extends BaseLayer {
         // 当前瓦片的显示位置
         let x = i * TILE_SIZE - offset[0];
         let y = j * TILE_SIZE - offset[1];
-        console.log(zoom);
         if (zoom === undefined || zoom === null) {
           continue
         }

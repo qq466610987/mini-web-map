@@ -1,11 +1,8 @@
-import {
-  lngLatToMercator,
-  resolutions,
-  mercatorToLngLat
-} from "./utils";
+import { lngLatToMercator, resolutions, mercatorToLngLat } from "./utils";
 import Layer from "./base-layer";
 import { animate } from "popmotion";
 import { omit } from "lodash-es";
+import * as glMatrix from "gl-matrix";
 
 interface MapOptions {
   container: HTMLElement;
@@ -29,10 +26,13 @@ class Map {
   private scale: number = 1; // 当前缩放值
   private scaleTmp: number = 1; // 目标缩放值
   private playback: any; // 动画
+  // 平移矩阵
+  private translateMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+
   constructor(options: MapOptions) {
     Object.assign(this, omit(options, "layers"));
     // 用addLayer方法添加图层，这样图层就可以访问到地图对象
-    options.layers.forEach(layer => {
+    options.layers.forEach((layer) => {
       this.addLayer(layer);
     });
     // 初始化dom
@@ -42,7 +42,7 @@ class Map {
     let canvas = document.createElement("canvas");
     canvas.width = this.width;
     canvas.height = this.height;
-    canvas.addEventListener('mousedown', this.onMousedown.bind(this));
+    canvas.addEventListener("mousedown", this.onMousedown.bind(this));
     this.ctx = canvas.getContext("2d")!;
     // 移动画布原点
     this.ctx.translate(this.width / 2, this.height / 2);
@@ -73,14 +73,21 @@ class Map {
   render(): void {
     // 清空画布
     this.ctx.clearRect(0, 0, this.width, this.height);
-    this.layers.forEach(layer => {
+    this.layers.forEach((layer) => {
       layer.render();
     });
   }
+
   private onMousemove(e: MouseEvent) {
     if (!this._isMousedown) {
       return;
     }
+    // 设置平移矩阵
+    const o = new Float32Array([1, 0, 0, 0, 1, 0, e.movementX, e.movementY, 1]);
+    const out = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const calc = glMatrix.mat3.multiply(out, o, this.translateMatrix);
+    this.setTranslateMatrix(calc)
+
     // 计算本次拖动的距离对应的经纬度数据
     let mx = e.movementX * resolutions[this.zoom];
     let my = e.movementY * resolutions[this.zoom];
@@ -90,6 +97,7 @@ class Map {
     // 重新渲染
     this.render();
   }
+
   // 鼠标松开
   private onMouseup() {
     this._isMousedown = false;
@@ -151,6 +159,13 @@ class Map {
     });
   }
 
+  public getTranslateMatrix() {
+    return this.translateMatrix;
+  }
+
+  private setTranslateMatrix(matrix: number[][]) {
+    this.translateMatrix = matrix;
+  }
   public addLayer(layer: Layer) {
     layer.setMap(this);
     this.layers.push(layer);
