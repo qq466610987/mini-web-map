@@ -11,6 +11,7 @@ class MarkerLayer extends BaseLayer {
   private width: number = 40;
   private height: number = 40;
   private container: HTMLElement;
+  private img: HTMLImageElement;
 
   constructor(options: {
     imgSrc: string,
@@ -30,10 +31,14 @@ class MarkerLayer extends BaseLayer {
     const center = this.map!.getCenter()
     const [centerX, centerY] = getPxFromLngLat(...[...center, zoom]);
     const [offsetX, offsetY] = [centerX - x, centerY - y];
-    let img = new Image();
-    img.src = this.imgSrc;
-    img.onload = () => {
-      this.getMap()?.getCtx().drawImage(img, -offsetX, -offsetY,this.width,this.height)
+    if(!this.img){
+      const img = this.img = new Image();
+      img.src = this.imgSrc;
+      img.onload = () => {
+        this.getMap()?.getCtx().drawImage(img, -offsetX, -offsetY,this.width,this.height)
+      }
+    }else{
+      this.getMap()?.getCtx().drawImage(this.img, -offsetX, -offsetY,this.width,this.height)
     }
   }
 }
