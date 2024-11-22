@@ -167,6 +167,7 @@ class Map {
     this.translateMatrix = matrix;
   }
   public addLayer(layer: Layer) {
+    debugger
     layer.setMap(this);
     this.layers.push(layer);
   }

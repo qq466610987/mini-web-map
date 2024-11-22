@@ -4,7 +4,7 @@ abstract class BaseLayer {
   z: number; //层级
   visible: boolean;
   opacity: boolean;
-  private map: Map | null = null; // 指向地图容器对象
+  protected map: Map | null = null; // 指向地图容器对象
   abstract render(): void
   getMap() {
     return this.map;

@@ -8,34 +8,33 @@ class MarkerLayer extends BaseLayer {
   private longitude: number;
   private latitude: number;
   private imgSrc: string;
-  private width: number;
-  private height: number;
-  private map: Map;
+  private width: number = 40;
+  private height: number = 40;
   private container: HTMLElement;
-  private markerDiv: HTMLDivElement;
 
-  constructor() {
+  constructor(options: {
+    imgSrc: string,
+    longitude: number,
+    latitude: number,
+  }) {
     super();
-    this.container = document.createElement("div");
-    this.container.className = 'marker-container'
-    this.container.style.position = "absolute";
-    this.container.style.height = "100%"
-    this.map.getContainer().appendChild(this.container);
-
-    this.markerDiv = document.createElement("div");
-    const img = document.createElement("img")
-    img.src = this.imgSrc
-    this.markerDiv.appendChild(
-      img
-    )
-
+    Object.assign(this, options);
+    this.ctx = this.getMap()?.getCtx()
   }
   public render(): void {
-    // 其实要实现的就是根据经纬度，通过一系列计算获得像素坐标
-    // 然后当鼠标拖动的时候，对图标进行平移
-    const zoom = this.map.getZoom();
+    debugger;
+    // 将经纬度转换为像素坐标，再将像素坐标转换为屏幕坐标
+    const zoom = this.map!.getZoom();
     const [x, y] = getPxFromLngLat(this.longitude, this.latitude, zoom);
-    this.markerDiv.style.translate = `${x}px ${y}px`;
+    // 获取屏幕中心点的像素坐标
+    const center = this.map!.getCenter()
+    const [centerX, centerY] = getPxFromLngLat(...[...center, zoom]);
+    const [offsetX, offsetY] = [centerX - x, centerY - y];
+    let img = new Image();
+    img.src = this.imgSrc;
+    img.onload = () => {
+      this.getMap()?.getCtx().drawImage(img, -offsetX, -offsetY,this.width,this.height)
+    }
   }
 }
 
